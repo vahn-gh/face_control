@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "face-control"
+version = "0.1.0"
+description = "Webcam posture monitor"
+requires-python = ">=3.11"
+dependencies = [
+    "opencv-contrib-python==5.0.0.93",
+    "mediapipe==0.10.35",
+    "numpy==2.5.3",
+    "PySide6-Essentials==6.11.2",
+    "pyobjc-framework-Cocoa==12.2.2; sys_platform == 'darwin'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[project.scripts]
+face-control = "face_control.__main__:main"
+
+[tool.setuptools]
+packages = ["face_control"]
+
+[tool.setuptools.package-data]
+face_control = ["sounds/*.wav"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
