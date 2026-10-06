@@ -57,8 +57,8 @@ recover_delay = 1.0          # seconds of good posture before it clears
 enabled = true
 volume = 1.0                 # 0..1
 # file = "/path/to/alert.wav"   # default: bundled sound
-repeat_interval = 30.0       # seconds between repeats while still bad; 0 = off
-cooldown = 10.0              # minimum seconds between any two sounds
+repeat_interval = 3.0        # seconds between repeats while still bad; 0 = off
+cooldown = 3.0             # minimum seconds between any two sounds
 
 [window]
 width = 320                  # mini window width in pixels

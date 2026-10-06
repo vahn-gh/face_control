@@ -9,7 +9,7 @@ from face_control import config as config_module
 from face_control.camera import CameraError
 from face_control.config import Config, ConfigError
 from face_control.config import parse as parse_config
-from face_control.profiles import PROFILE_NAMES, CalibrationError
+from face_control.profiles import CalibrationError, profile_name
 
 log = logging.getLogger("face_control")
 
@@ -30,11 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--window-width", type=int, help="mini window width")
     sub = parser.add_subparsers(dest="command")
     cal = sub.add_parser("calibrate", help="record a posture as a profile")
-    cal.add_argument("profile", choices=PROFILE_NAMES)
+    cal.add_argument("profile", type=profile_name, help="upright, reclined, standing or any name, e.g. at_cafe")
     cal.add_argument("--seconds", type=float, default=5.0, help="recording length (default 5)")
     cal.add_argument("--countdown", type=float, default=3.0, help="get-ready time (default 3)")
     pr = sub.add_parser("pitch-range", help="set the OK head pitch range (degrees) for a profile")
-    pr.add_argument("profile", choices=PROFILE_NAMES)
+    pr.add_argument("profile", type=profile_name)
     pr.add_argument("min", type=float, nargs="?", help="lowest OK pitch (negative = looking down)")
     pr.add_argument("max", type=float, nargs="?", help="highest OK pitch")
     pr.add_argument("--clear", action="store_true", help="go back to calibrated neutral +/- deviation")

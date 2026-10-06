@@ -115,6 +115,7 @@ def run_app(config: Config, show_window: bool) -> int:
             config.rules,
             config.debounce,
             alerts,
+            watch_profiles=True,
         )
 
     def on_error(e: BaseException) -> None:
@@ -163,8 +164,22 @@ def run_app(config: Config, show_window: bool) -> int:
         elif reason == QSystemTrayIcon.ActivationReason.Context:
             show_menu(QCursor.pos())
 
+    def sync_calibrate_menu() -> None:
+        """List the profiles recorded in profiles.json (just Upright when there are none)."""
+        try:
+            names = list(profile_store.load().profiles)
+        except RuntimeError as e:
+            log.error("%s", e)
+            names = []
+        names = [n for n in PROFILE_NAMES if n in names] + [n for n in names if n not in PROFILE_NAMES]
+        calibrate_menu.clear()
+        for name in names or [PROFILE_NAMES[0]]:
+            act = calibrate_menu.addAction(name.replace("_", " ").capitalize())
+            act.triggered.connect(lambda _checked=False, n=name: start_calibration(n))
+
     def show_menu(pos: QPoint) -> None:
         sync_labels()
+        sync_calibrate_menu()
         menu.popup(pos)
 
     def set_paused(paused: bool) -> None:
@@ -216,9 +231,7 @@ def run_app(config: Config, show_window: bool) -> int:
     toggle_win.triggered.connect(toggle_window)
     pause_act.triggered.connect(on_pause_clicked)
     quit_act.triggered.connect(app.quit)
-    for name in PROFILE_NAMES:
-        act = calibrate_menu.addAction(name.capitalize())
-        act.triggered.connect(lambda _checked=False, n=name: start_calibration(n))
+    sync_calibrate_menu()
     menu.insertAction(calibrate_menu.menuAction(), toggle_win)
     menu.insertAction(calibrate_menu.menuAction(), pause_act)
     menu.addSeparator()

@@ -1,11 +1,22 @@
 """Posture profiles: build from calibration samples, match against live metrics. Pure logic."""
 
+import argparse
+import re
 import statistics
 from dataclasses import dataclass, field
 
 from face_control.metrics import Metrics
 
-PROFILE_NAMES = ("upright", "reclined", "standing")
+PROFILE_NAMES = ("upright", "reclined", "standing")  # built-in; any other valid name works too
+
+
+
+def profile_name(value: str) -> str:
+    """argparse type: a profile name such as 'at_cafe' (lowercase letters, digits, _ or -)."""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", value):
+        raise argparse.ArgumentTypeError(f"invalid profile name '{value}': use lowercase letters, digits, _ or -")
+    return value
+
 
 # Recorded for every profile (pitch is recorded but only supplies the rule's neutral).
 RECORDED_METRICS = ("head_y", "shoulder_width", "torso_lean", "head_pitch", "shoulder_tilt")

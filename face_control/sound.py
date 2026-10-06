@@ -21,8 +21,8 @@ class SoundConfig:
     enabled: bool = True
     volume: float = 1.0  # 0..1
     file: Path | None = None  # None = bundled sound
-    repeat_interval: float = 30.0  # seconds while still violating; 0 = no repeat
-    cooldown: float = 10.0  # minimum seconds between any two sounds
+    repeat_interval: float = 3.0  # seconds while still violating; 0 = no repeat
+    cooldown: float = 3.0 # minimum seconds between any two sounds
 
     @property
     def path(self) -> Path:
