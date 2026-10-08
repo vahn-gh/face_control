@@ -13,7 +13,7 @@ import threading
 import cv2
 import numpy as np
 from PySide6.QtCore import QObject, QPoint, Qt, QTimer, Signal
-from PySide6.QtGui import QAction, QColor, QCursor, QIcon, QImage, QPainter, QPixmap
+from PySide6.QtGui import QAction, QActionGroup, QColor, QCursor, QIcon, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from face_control import overlay, profile_store
@@ -85,6 +85,7 @@ def run_app(config: Config, show_window: bool) -> int:
     bridge = Bridge()
     exit_code = [0]
     calibrating = threading.Event()
+    fixed_profile: list[str | None] = [None]  # None = automatic switching
 
     def run(stop: threading.Event) -> None:
         store = profile_store.load()  # re-read each start so new calibrations apply
@@ -116,6 +117,7 @@ def run_app(config: Config, show_window: bool) -> int:
             config.debounce,
             alerts,
             watch_profiles=True,
+            fixed_profile=lambda: fixed_profile[0],
         )
 
     def on_error(e: BaseException) -> None:
@@ -133,6 +135,8 @@ def run_app(config: Config, show_window: bool) -> int:
     menu = QMenu()
     toggle_win = QAction("Show window")
     pause_act = QAction("Pause")
+    profile_menu = menu.addMenu("Profile")
+    profile_group = QActionGroup(profile_menu)
     calibrate_menu = menu.addMenu("Calibrate")
     quit_act = QAction("Quit")
 
@@ -172,10 +176,29 @@ def run_app(config: Config, show_window: bool) -> int:
             log.error("%s", e)
             names = []
         names = [n for n in PROFILE_NAMES if n in names] + [n for n in names if n not in PROFILE_NAMES]
+        sync_profile_menu(names)
         calibrate_menu.clear()
         for name in names or [PROFILE_NAMES[0]]:
             act = calibrate_menu.addAction(name.replace("_", " ").capitalize())
             act.triggered.connect(lambda _checked=False, n=name: start_calibration(n))
+
+    def select_profile(name: str | None) -> None:
+        fixed_profile[0] = name
+        log.info("Profile: %s", name or "auto")
+
+    def sync_profile_menu(names: list[str]) -> None:
+        """Auto plus one checkable entry per profile; a fixed profile is the only one counted."""
+        if fixed_profile[0] is not None and fixed_profile[0] not in names:
+            fixed_profile[0] = None  # profile was removed
+        profile_menu.clear()
+        for act in profile_group.actions():
+            profile_group.removeAction(act)
+        for name in [None, *names]:
+            act = profile_menu.addAction("Auto" if name is None else name.replace("_", " ").capitalize())
+            act.setCheckable(True)
+            act.setChecked(fixed_profile[0] == name)
+            profile_group.addAction(act)
+            act.triggered.connect(lambda _checked=False, n=name: select_profile(n))
 
     def show_menu(pos: QPoint) -> None:
         sync_labels()
@@ -232,8 +255,8 @@ def run_app(config: Config, show_window: bool) -> int:
     pause_act.triggered.connect(on_pause_clicked)
     quit_act.triggered.connect(app.quit)
     sync_calibrate_menu()
-    menu.insertAction(calibrate_menu.menuAction(), toggle_win)
-    menu.insertAction(calibrate_menu.menuAction(), pause_act)
+    menu.insertAction(profile_menu.menuAction(), toggle_win)
+    menu.insertAction(profile_menu.menuAction(), pause_act)
     menu.addSeparator()
     menu.addAction(quit_act)
     # No setContextMenu: on macOS that makes a left click open the menu instead of

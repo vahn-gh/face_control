@@ -41,10 +41,13 @@ def run_pipeline(
     debounce: DebounceConfig = DebounceConfig(),
     alerts: AlertPolicy | None = None,
     watch_profiles: bool = False,
+    fixed_profile: Callable[[], str | None] | None = None,
 ) -> None:
     """Capture + detect until `stop` is set or KeyboardInterrupt. May raise CameraError.
 
     With `watch_profiles`, `store` is refreshed in place whenever profiles.json changes.
+    `fixed_profile()` returns a profile name to judge posture against exclusively (no automatic
+    switching), or None for automatic matching; an unknown name falls back to automatic.
     """
     start = time.monotonic()
     detector = Detector()
@@ -72,7 +75,9 @@ def run_pipeline(
                         log.error("%s", e)  # keep the previous profiles
             result = detector.process(frame, int((time.monotonic() - start) * 1000))
             result = dataclasses.replace(result, metrics=smoother.update(result.metrics))
-            verdict = evaluate(result.metrics, result.detected, profiles, config)
+            fixed = fixed_profile() if fixed_profile else None
+            active = [p for p in profiles if p.name == fixed] or profiles
+            verdict = evaluate(result.metrics, result.detected, active, config)
             log.debug("detected=%s %s -> %s", result.detected, result.metrics, verdict)
             event = tracker.update(verdict.ok)
             if event is not None:
